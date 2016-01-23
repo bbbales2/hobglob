@@ -2,6 +2,7 @@ require("mobdebug").start()
 
 --require('debug')
 local Peon = require('Peon')
+local HC = require('HC')
 
 function math.round(x)
   if x - math.floor(x) < math.ceil(x) - x then
@@ -11,7 +12,17 @@ function math.round(x)
   end
 end
 
+world = {
+  collider = HC.new(200),
+  creatures = {},
+  structs = {}
+}
+
 function love.load(arg)
+  circle = HC.circle(400,300,20)
+  
+  table = { circle = 123 }
+  
   Terrain = love.graphics.newImage('SevenKingdoms_graphics/terrain/I_tpict1.res.png')
   
   grassQ = love.graphics.newQuad(380, 0, 60, 60, Terrain:getWidth(), Terrain:getHeight())
@@ -26,10 +37,17 @@ function love.load(arg)
   
   playerImg = love.graphics.newImage('SevenKingdoms_graphics/sprites/hobglob/0000.png')
   
-  tree = { t = Trees, g = treeQ, x = 300, y = 150, w = 30, h = 50, r = 20 }
-  hut = { t = Buildings, g = hutQ, x = 400, y = 300, w = 32, h = 30, r = 20 }
+  tree = { t = Trees, g = treeQ, x = 200, y = 150, w = 30, h = 50, r = 20, shape = world.collider:circle(300, 150, 50) }
+  hut = { t = Buildings, g = hutQ, x = 400, y = 350, w = 32, h = 30, r = 20 }
   
-  creatures = { Peon:new({ x = 100, y = 200 }) }
+  for i = 1, 5 do
+    peon = Peon:new({ x = math.random(0, love.graphics.getWidth()), y = math.random(0, love.graphics.getHeight()), world = world })
+    --peon = Peon:new({ x = 300, y = 300, world = world })
+  
+    world.creatures[peon.shape] = peon
+  end
+  
+  world.structs[tree.shape] = tree
 end
 
 wood = 0
@@ -38,7 +56,7 @@ t = 0.0
 function love.update(dt)
   t = t + dt
   
-  for k, creature in pairs(creatures) do
+  for shape, creature in pairs(world.creatures) do
     creature:update({ tree }, dt)
   end
 end
@@ -57,7 +75,7 @@ function love.draw(dt)
   
   love.graphics.print(string.format("Wood: %d", wood), 20, 20)
   
-  for k, creature in pairs(creatures) do
+  for shape, creature in pairs(world.creatures) do
     creature:draw(dt)
   end
 end
