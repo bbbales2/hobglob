@@ -1,4 +1,4 @@
-require("mobdebug").start()
+--require("mobdebug").start()
 
 local table = require('table')
 
@@ -52,7 +52,7 @@ function love.load(arg)
   
   hut = { t = Buildings, g = hutQ, x = 400, y = 350, w = 32, h = 30, r = 20 }
   
-  for i = 1, 100 do
+  for i = 1, 300 do
     tree = Tree:new({ x = math.random(0, love.graphics.getWidth()), y = math.random(0, love.graphics.getHeight()), world = world })
     --peon = Peon:new({ x = 300, y = 300, world = world })
   
@@ -157,7 +157,7 @@ function love.draw(dt)
   
   love.graphics.draw(sb, 0, 0)
   
-  love.graphics.draw(texture, hut.g, hut.x - hut.w / 2, hut.y - hut.h / 2)
+  --love.graphics.draw(texture, hut.g, hut.x - hut.w / 2, hut.y - hut.h / 2)
   
   love.graphics.print(string.format("FPS: %d", love.timer.getFPS()), 20, 60)
   love.graphics.print(string.format("Wood: %d", world.wood), 20, 20)

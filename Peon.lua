@@ -7,7 +7,7 @@ local Peon = {
   t = 0,
   shape = nil,
   world = nil,
-  r = 25,
+  r = 10,
   selected = false,
   __type = 'Peon'
 }
@@ -70,9 +70,7 @@ function Peon:update(world, dt)
         local ddx = (other.x - self.x)
         local ddy = (other.y - self.y)
         local dd = math.sqrt(ddx * ddx + ddy * ddy)
-        if type(other) == 'Tree' then
-          print('hi')
-        end
+        
         local f = 1 / (1 + math.exp(-(other.r + self.r - dd - 10) / 2.0))
         
         dx = dx - f * ddx / dd
