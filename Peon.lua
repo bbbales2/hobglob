@@ -2,13 +2,16 @@ local Peon = {
   x = 0,
   y = 0,
   angle = 1.5 * math.pi,
-  state = 'walking',
+  state = 'standing',
   frame = 0,
   t = 0,
   shape = nil,
   world = nil,
-  r = 25
+  r = 25,
+  selected = false,
+  __type = 'Peon'
 }
+
 
 local w = 85
 local h = 98
@@ -16,7 +19,6 @@ local h = 98
 local anim8 = require('anim8')
 local HC = require('HC')
 
-local texture = love.graphics.newImage('processed_graphics/hobglob.png')
 local hanim = anim8.newGrid(w, h, texture:getWidth(), texture:getHeight(), 0, 0)
   
 walking = { 
@@ -33,7 +35,7 @@ walking = {
 chopping = {
   hanim('1-4', 6)
 }
-  
+
 function Peon:new (o)
   o = o or {}
   setmetatable(o, self)
@@ -62,13 +64,16 @@ function Peon:update(world, dt)
     
     --Avoid other creatures
     for shape, delta in pairs(self.world.collider:collisions(self.shape)) do
-      other = self.world.creatures[shape]
-      if other then -- If we've collided with a creature
+      other = self.world.creatures[shape] or self.world.structs[shape]
+      if type(other) == 'Peon' or type(other) == 'Tree' then -- If we've collided with a creature
         --print(delta.x, delta.y)
         local ddx = (other.x - self.x)
         local ddy = (other.y - self.y)
         local dd = math.sqrt(ddx * ddx + ddy * ddy)
-        local f = 1 / (1 + math.exp(-(other.r + self.r - dd - 10) / 3.0))
+        if type(other) == 'Tree' then
+          print('hi')
+        end
+        local f = 1 / (1 + math.exp(-(other.r + self.r - dd - 10) / 2.0))
         
         dx = dx - f * ddx / dd
         dy = dy - f * ddy / dd
@@ -90,7 +95,6 @@ function Peon:update(world, dt)
     
     self.shape:moveTo(self.x, self.y)
     
-      
     if (self.target.r + self.r) > tdistance and self.target == tree then
       self.state = 'chopping'
       self.chop_time = t + 1.0
@@ -100,11 +104,11 @@ function Peon:update(world, dt)
       self.state = 'walking'
       self.target = tree
       
-      wood = wood + 4
+      self.world.wood = self.world.wood + 4
     end
-  end
   
-  if self.state == 'chopping' then
+    self.frame = math.floor((t * 20.0) % #self.anim) + 1
+  elseif self.state == 'chopping' then
     self.anim = chopping[1]
     
     if t > self.chop_time then
@@ -112,18 +116,30 @@ function Peon:update(world, dt)
       
       self.target = hut
     end
+  
+    self.frame = math.floor((t * 20.0) % #self.anim) + 1
+  elseif self.state == 'standing' then
+    self.anim = chopping[1]
+    self.frame = 1
   end
    
-  self.frame = math.floor((t * 20.0) % #self.anim) + 1
-  
   self.t = self.t + dt
 end
 
-function Peon:draw(dt)
-    love.graphics.draw(texture, self.anim[self.frame], self.x - w / 2, self.y - h / 2.0)
-    --love.graphics.setColor(255, 0, 0)
-    --love.graphics.circle("fill", self.x, self.y, self.r, 20)
-    --love.graphics.setColor(255, 255, 255)
+function Peon:draw(sb, dt)
+  local dx = w / 2.0
+  local dy = 60
+  
+  sb:add(self.anim[self.frame], self.x - dx, self.y - dy)
+  --if self.selected then
+  --  love.graphics.setColor(255, 0, 0)
+  --  love.graphics.circle("fill", self.x, self.y, self.r, 20)
+  --  love.graphics.setColor(255, 255, 255)
+  --end
+  
+  --love.graphics.setColor(255, 0, 0)
+  --love.graphics.circle("line", self.x, self.y, 10.0, 20)
+  --love.graphics.setColor(255, 255, 255)
 end
 
 return Peon
