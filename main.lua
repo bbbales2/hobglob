@@ -8,7 +8,10 @@ texture = love.graphics.newImage('processed_graphics/texture.png')
 local Peon = require('Peon')
 local Flag = require('Flag')
 local Tree = require('Tree')
+local Map = require('Map')
+
 local HC = require('HC')
+local Camera = require "hump.camera"
 
 local oldType = type 
 function type(x)
@@ -30,21 +33,29 @@ function math.round(x)
 end
 
 world = {
+  map = nil,
   collider = HC.new(100),
   creatures = {},
   structs = {},
-  wood = 0
+  wood = 0,
+  width = 1024,
+  height = 768,
+  player = {
+    x = 500,
+    y = 200,
+    z = 1.0,
+    camera = Camera.new(0, 0)
+  }
 }
 
 local mouse = world.collider:point(0, 0)
 local selected = nil
 local flags = 2
 
-sb = love.graphics.newSpriteBatch(texture, 1000)
+sb = love.graphics.newSpriteBatch(texture, 2000)
 
 function love.load(arg)
-  grassQ = love.graphics.newQuad(380, 1081, 60, 60, texture:getWidth(), texture:getHeight())
-  
+  world.map = Map:new({ width = world.width, height = world.height, world = world })
   --Buildings = love.graphics.newImage('SevenKingdoms_graphics/buildings/Village-sprites.png')
   
   --hutQ = love.graphics.newQuad(70, 0, 30, 32, Buildings:getWidth(), Buildings:getHeight())
@@ -53,7 +64,7 @@ function love.load(arg)
   hut = { t = Buildings, g = hutQ, x = 400, y = 350, w = 32, h = 30, r = 20 }
   
   for i = 1, 300 do
-    tree = Tree:new({ x = math.random(0, love.graphics.getWidth()), y = math.random(0, love.graphics.getHeight()), world = world })
+    tree = Tree:new({ x = math.random(0, world.width), y = math.random(0, world.height), world = world })
     --peon = Peon:new({ x = 300, y = 300, world = world })
   
     world.structs[tree.shape] = tree
@@ -68,7 +79,6 @@ function love.load(arg)
       x = math.random(0, love.graphics.getWidth()),
       y = math.random(0, love.graphics.getHeight()),
       world = world,
-      target = tree,
       state = 'walking'
     })
   
@@ -87,6 +97,11 @@ function love.keyreleased(key, scancode)
 end
 
 function love.mousereleased(x, y, button, istouch)
+  x = x + math.floor(world.player.x) - love.graphics.getWidth() / 2
+  y = y + math.floor(world.player.y) - love.graphics.getHeight() / 2
+  
+  print(x, y, world.player.x, world.player.y)
+  
   if button == 1 then -- select
     if selected then
       selected.selected = false
@@ -122,18 +137,41 @@ function love.update(dt)
   for shape, creature in pairs(world.creatures) do
     creature:update({ tree }, dt)
   end
+  
+  if love.keyboard.isDown("up") then
+    world.player.y = world.player.y - 200 * dt
+  end
+  
+  if love.keyboard.isDown("down") then
+    world.player.y = world.player.y + 200 * dt
+  end
+  
+  if love.keyboard.isDown("left") then
+    world.player.x = world.player.x - 200 * dt
+  end
+  
+  if love.keyboard.isDown("right") then
+    world.player.x = world.player.x + 200 * dt
+  end
+  
+  if love.keyboard.isDown("a") then
+    world.player.z = world.player.z + dt
+  end
+  
+  if love.keyboard.isDown("s") then
+    world.player.z = world.player.z - dt
+  end
+  
+  world.player.camera:lookAt(math.floor(world.player.x), math.floor(world.player.y))
+  world.player.camera:zoomTo(world.player.z)
 end
 
 function love.draw(dt)
+  world.player.camera:attach()
+  
   sb:clear()
  
-  -- Draw the grass background
-  for i = 0, love.graphics.getWidth(), 60 do
-    for j = 0, love.graphics.getHeight(), 60 do
-      sb:add(grassQ, i, j)
-      --love.graphics.draw(texture, grassQ, i, j)
-    end
-  end
+  world.map:draw(sb, dt)
   
   toDraw = {}
   
@@ -157,10 +195,11 @@ function love.draw(dt)
   
   love.graphics.draw(sb, 0, 0)
   
+  world.player.camera:detach()
+  
   --love.graphics.draw(texture, hut.g, hut.x - hut.w / 2, hut.y - hut.h / 2)
   
   love.graphics.print(string.format("FPS: %d", love.timer.getFPS()), 20, 60)
   love.graphics.print(string.format("Wood: %d", world.wood), 20, 20)
   love.graphics.print(string.format("Flags: %d", flags), 20, 40)
-  
 end
